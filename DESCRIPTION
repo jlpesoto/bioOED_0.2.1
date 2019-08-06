@@ -4,6 +4,8 @@ Title: Sensitivity Analysis and Optimum Experiment Design for Microbial
     Inactivation
 Version: 0.2.1
 Date: 2019-07-17
+
+Maintainer: Alberto Garre <garre.alberto@gmail.com>
 Authors@R: c(person("Jose Lucas", "Penalver", email = "joselucasps@gmail.com", role = "aut"),
 	     person("Alberto", "Garre", email = "garre.alberto@gmail.com", role = c("aut", "cre")),
              person("Pablo S.", "Fernandez", email = "pablo.fernandez@upct.es", role = "aut"),
