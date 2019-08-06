@@ -1,0 +1,294 @@
+---
+title: "Optimal Experiment Design applied to isothermal experiments"
+author: "Jose Lucas Peñalver Soto, Alberto Garre, Pablo S. Fernandez, Jose A. Egea"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{bioOED_vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+## Preparation
+
+For the manipulation of data frames, we will use the *tidyverse* package:
+
+```{r}
+library(tidyverse)
+```
+
+## Introduction: OED of isothermal experiments
+
+This vignette presents the functions implemented in the `bioOED` package for Optimal Experimental Design (OED) of isothermal microbial inactivation experiments. Although more simple than dynamic experiments from an experimental point of view, the design of optimal isothermal inactivation experiments is more complex when viewed as an optimization problem. The reason for this is that the decision variables are two-dimensional (time and temperature). In addition, the maximum time of an isothermal experiment is dictated by the detection limit (minimum concentration measurable in the laboratory), that is a function of temperature. This introduces a restriction that must be implemented in the optimization problem.
+
+The *bioOED* package can be downloaded form the Comprehensive R Archive Network (CRAN). Once installed, it can be loaded as
+
+```{r}
+library(bioOED)
+```
+
+The functions included in *bioOED* for OED of isothermal experiments are the following:
+
+* *isothermal_sensitivities()*: calculates the local sensitivites of isothermal microbial inactivation.
+* *isothermal_OED()*: Designs an optimum experiment based on a given measurement of the FIM. Optimal Experiment Design of isothermal inactivation.
+* *isothermal_OED_limit()*: Similar to *isothermal_OED()*, although including detection limit.
+
+The simulations of microbial inactivation performed by _bioOED_ are based on the functions implemented in the _bioinactivation_ (Garre et al., 2017) package.
+
+## Optimum Isothermal Experiment Design
+
+The OED tries to find the most informative experimental design for a set of restrictions (e.g. number of sampling points). The *bioOED* package applies a methodology for the OED based on the properties of the Fisher Information Matrix (FIM). Due to the Cramer-Rao inequality, the maximization of the FIM results in the minimization of the expected covariance matrix of the mdoel parameters. This can be done according to several criteria:
+
+The A-criterion minimizes the trace of the inverse of the FIM:
+$$
+\min tr(FIM^{-1})
+$$
+It can be interpreted as the minimization of the arithmetic mean of the error of each model parameter.
+
+The modified A-criterion proposes the maximization of the trace of the trace of the FIM:
+$$
+\max tr(FIM))
+$$
+As A-criterion requires the calculation of the inverse of the FIM, which may be problematic the modified A-criterion is used.
+
+The D-criterion proposes the maximation of the determinant of the FIM 
+$$
+\max \det\,FIM
+$$
+This is equivalent to the minimization of the volume of the joint confidence ellipsoids.
+
+The E-criterion has the objective of the minimization of the greatest eigenvalue of the inverse of the FIM:
+$$
+\min \lambda_{max}(FIM^{-1})
+$$
+Thus minimizing the length of the longest axis of the confidence ellipsoids.
+
+The modified E-criterion proposes the minimization of the absolute value of the ratio between the maximum and minimum absolute value of the FIM:
+$$
+\min abs \left(\frac{\lambda_{max}(FIM)}{\lambda_{min}(FIM)} \right)
+$$
+Hence, this criterion tries to make the confidence ellipsoid as spherical as possible.
+
+The functions included in *bioOED* to select the optimization criteria are the following: *criterium_D_iso*, *criterium_Emod_iso*, *criterium_E_iso*, *criterium_Amod_iso* and *criterium_A_iso*.
+
+## Microbial isothermal inactivation models
+
+Microbial inactivation models describe the variation of the logarithm of the microbial count ($\log N$) during a thermal treatment at temperature $T$ and duration $t$. The following table describes the inactivation models available in *bioOED* for OED of isothermal experiments.
+
+|Model| Primary model| Secondary model|
+|------:|:-----|:------:|
+|Bigelow| $$log_{10}\: N/N_0=-1/D(T)$$| $$ log_{10}\,D(T)=log_{10}\,D_{ref}-\frac{T-T_{ref}}{z}$$|
+|Peleg| $$log_{10}\: N/ N_0 = -b(T)\cdot t^n$$|$$ b(t)=ln(1+e^{k(T-T_c)})$$|
+|Mafart|$$log_{10}\: N/ N_0 = - \bigg(\frac{t}{\delta(T)}\bigg)^p$$|$$log_{10}\,\delta(T)=log_{10}\,\delta_{ref}-\frac{T-T_{ref}}{z}$$|
+
+## Local sensitivity functions
+
+Local sensitivities ($S_{j}$) play a key role on Optimum Experiment Design. These functions quantify the variation of the output variable, $y$, ($\log N$ for microbial inactivation) caused by a unitary variation of the model parameter ($\theta_j$):
+$$
+    S_{j} = \frac{\partial y}{\partial \theta_j}
+$$
+
+For isothermal inactivation, the local sensibilities of the Bigelow, Mafart and Peleg can be calculated analytically insted of using numeric methods.
+
+### Local sensitivities of the Bigelow model
+
+For Bigelow model and isothermal conditions, the sensibilities functions for $D_{T_{ref}}$ and $z$ are: 
+$$
+S_{D_R} = \frac {\partial \: log N }{ \partial \: D_{T_{ref}}}= \frac{10^{\frac {T-T_{ref}}{z}}\cdot t}{{D_{T{ref}}}^2}
+$$
+$$
+S_z =\frac {\partial \: log N }{ \partial \: z}= \frac {10^{\frac {T-T_{ref}}{z}}\cdot (T-T_{ref}) \cdot ln \, 10 \cdot t }{D_{T_{ref}} \cdot z^2}
+$$
+Note that the Bigelow model has an additional parameter, $T_{ref}$, without biological meaning but it can improve the model identificability. That is, the value of this parameter is known and is not adjusted from experimental data.
+
+### Local sensitivities of the Peleg model
+
+For Peleg model and isothermal conditions, the sensibilities functions for $K$, $T_C$ and $n$ are: 
+$$
+S_{K} = t^n e^{K(T-T_C)}\frac {T-T_C }{1+e^{K(T-T_C)}}
+$$
+$$
+S_{T_C} = -\frac {t^n e^{K(T-T_C)} K}{1+e^{K(T-T_C)}}
+$$
+$$
+S_{n} = t^n ln(t)ln(1+e^{K(T-T_C)})
+$$
+
+### Local sensitivities of the Mafart model
+
+For Mafart model and isothermal conditions, the sensibilities functions for $p$, $D_R$ and $z$ are: 
+$$
+S_{p} =-\bigg(\frac{t}{D_{T_{ref}}\cdot10^{\frac{T_{ref}-T}{z}}}\bigg)^p ln\bigg (\frac {t}{D_{T_{ref}}\cdot10^ \frac{T_{ref}-T}{z}}\bigg)
+$$
+$$
+S_{D_R} =\frac{p t^p}{{D_{T_{ref}}}^{p+1} \cdot 10^\frac{T_{ref}p-tp}{z}}
+$$
+$$
+S_{z} =- \frac{ln(10)\cdot10^\frac{-T_{ref}p+tp}{z}pt^p(T_{ref}-t)}{{D_{T_{ref}}}^p\cdot z^2}
+$$
+
+Note that the Mafart model has an additional parameter, $T_{ref}$, without biological meaning but it can improve the model identificability. That is, the value of this parameter is known and is not adjusted from experimental data.
+
+`bioOED` includes the `isothermal_sensitivities` that calculates the value of the local sensitivity at the selected sampling points for the selected inactivation model and model parameters. It has three input arguments:
+
+* `model`: A character defining the microbial inactivation model (one of "Bigelow", "Peleg" or "Mafart").
+* exp_design: a `data.frame` with two columns ("time" and "temperature") describing the experimental design.
+* pars: a list defining the model parameters according to the rules defined in the *bioinactivation* package.
+
+This function can be used to calculate the shape of the local sensitivity functions in the design space. As an example, let's use the D and z-values of Listeria monocytogenes in laboratory media:
+
+```{r}
+pars <- list(z = 4.2, D_R = 3.9, temp_ref = 55)
+```
+
+As design espace, let's study the temperature range commonly used for characterizing thermal inactivation of *L. monocytogenes*:
+
+```{r}
+design_space <- expand.grid(seq(0, 100, length = 20),
+                            seq(52.5,60, length = 20)
+                            ) %>%
+  set_names("times", "temperature")
+
+head(design_space)
+```
+
+Now, we can call the `isothermal_sensitivities`:
+
+```{r}
+my_sensitivities <- isothermal_sensitivities("Bigelow", design_space, pars)
+```
+
+It returns a  `list` of class `IsoSensitivities` with three attributes: 
+
+* `model`
+* `pars`
+* `sensitivities`
+
+The attributes `model` and `pars` are the inactivation model and model parameters used for calculating the local sensitivites. `exp_design` is a `data.frame` with as many rows as `exp_design` but with several columns added, reporting the local sensitivities. These are named according to the model parameters, so the column `D_R` stands for the local sensitivity with respect to the D-value at the reference temperature. Also, the columns with the underscore "_scaled" provides the scaled local sensitivities, so `D_R_scaled` reports the scaled local sensitivity with respect to the D-value at the reference temperature.
+
+```{r}
+head(my_sensitivities$sensitivities)
+```
+
+The `bioOED` package implements S3 methods for visualizing the local sensitivities:
+
+```{r}
+plot(my_sensitivities)
+```
+
+The plot generated is made of one facet for each model parameter. The areas with equal local sensibility are depicted with solid lines, whereas the magnitude of the local sensitivity function on each point of the design space is illustrated with a color range.
+
+For isothermal experiments, the maximum duration of the experiment is temperature dependent (because of the detection limit) and plays an importal role for the experimental design. It can be illustrated in the plot by passing a value to the optional argument `limit`, that represents the maximum number of log-reductions that can be observed in the lab. For instance, with an initial microbial count of 8 log UFC and a detection limit of 1 log UFC, `limit = 7`:
+
+```{r}
+plot(my_sensitivities, limit = 7)
+```
+
+## OED of microbial inactivation for isothermal conditions
+
+The function *isothermal_OED()* is able to generate an optimum isothermal experiment design for an isothermal microbial inactivation experiment. This function has 9 input arguments:
+
+* *model*
+* *pars*
+* *n_points*
+* *min_time*
+* *max_time*
+* *min_temp*
+* *max_temp*
+* *criterium*
+* *opts*
+
+The inactivation model to use for the calculation is defined by the input argument *model*. It must be compatible with the *predict_inactivation()* function from the __bioinactivation__ package. The nominal values of the model parameters are provided by the argument `pars`. For this example, the same parameter values as for the previous example will be used.
+
+The number of measurements to be taken during the experiment are defined by the argument `n_points`. It must be an integer greater than 0. For the purpose of this example, we will set it to 5 (in actual conditions, this number is usually larger):
+
+```{r}
+n_points <- 5
+```
+
+The design space is defined through the inputs arguments `min_time`, `max_time`, `min_temp` and `max_temp`. We will again use the same space as for the previous example.
+
+The global optimization algorithm used is the MEIGO algorithm from the __MEIGOR__ package  (Egea et al., 2012). By default, a global solver with a maximum of 2000 function evaluations and the local search algorithm used is "DHC". This can be changed through the `opts` argument. For information regarding the format of this argument, refer to the help page of the *MEIGO()* function. For illustration purposes, only 500 function evaluations will be made. We recommend the user to set larger values for this argument, to ensure convergence of the optimization algorithm.
+
+```{r}
+opts <- list(maxeval=500,local_finish="DHC")
+
+OED <- isothermal_OED("Bigelow", pars, n_points, criterion = "E-mod",
+                      min_time = 0, max_time = 100,
+                      min_temp = 52.5, max_temp = 60,
+                      opts = opts)
+```
+
+The function *isothermal_OED* returns a list of class `OEDisothermal`. It contains the following entries:
+
+* `optim`: the object returned by the optimization routine.
+* `model`: inactivation model used for the simulation.
+* `pars`: nominal parameters considered for the OED.
+* `criterion`: optimization criteria followed.
+* `optim_algorithm`: optimization algorithm used.
+* `optim_design`: optimal data frame containing times and temperatures.
+* `limit`: detection limit set for the calculation (NULL for `isothermal_OED`).
+
+The optimum design can be accessed with the `optim_design` argument:
+
+```{r}
+OED$optim_design
+```
+
+It can be easily visualized using the S3 plot method implemented for `OEDisothermal` objects:
+
+```{r}
+plot(OED)
+```
+
+## OED for isothermal conditions and detection limit
+
+The maximum duration of an isothermal experiment is defined by the detection limit (the minimum microbial count that can be measured in the laboratory). Because the inactivation rate varies with temperature, the maximum duration of the experiment is temperature dependent. This can be considered in the OED with the `isothermal_OED_limit` function. This function has 11 input arguments, 9 of which are identical to those defined for *inactivation_OED()*:
+                                 
+* *model*
+* *pars*
+* *limit*
+* *n_points*
+* *min_time*
+* *max_time*
+* *min_temp*
+* *max_temp*
+* *criterion*
+* *opts*
+
+The only argument added by this function is `limit`. It is a numerical value describing the maximum number of log-reductions that can be identified in the experiment (equal to the initial microbial count menos de detection limit). Assumming an initial microbial count of 8 log CFU/ml and a detection limit of 1 log CFU/ml:
+
+```{r}
+limit <- 7
+```
+
+Now, we call the `isothermal_OED_limit` function with the same parameters as before, including the detection limit:
+
+```{r}
+OED_limit <- isothermal_OED_limit("Bigelow", pars, n_points, criterion = "E-mod", limit,
+                                  min_time = 0, max_time = 100, min_temp = 95,
+                                  max_temp = 110, opts)
+```
+
+The object returned by *isothermal_OED_limit()* is identical to the one returned by *isothermal_OED()*. The optimal experiment design can be retrieved in the `optim_design` entry:
+
+```{r}
+print(OED_limit$optim_design)
+```
+
+Again, the results can be easily plotted.
+
+```{r}
+plot(OED_limit)
+```
+
+Note that the detection limit is now added to the plot as a green line.
+
+## References
+
+Garre, A., Fernández, P. S., Lindqvist, R., & Egea, J. A. (2017). Bioinactivation: Software for modelling dynamic microbial inactivation. Food Research International, 93, 66–74. https://doi.org/10.1016/j.foodres.2017.01.012
+
+Jose A. Egea, David Enriques, Alexandre Fdez. Villaverde and Thomas Cokelaer (2012). MEIGOR: MEIGO - Metaheuristics for bioinformatics global optimization. R package version 1.0.0.
+
+
+

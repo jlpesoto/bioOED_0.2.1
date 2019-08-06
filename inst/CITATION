@@ -1,0 +1,16 @@
+citHeader("To cite bioOED in publications, please use:")
+
+citEntry(entry = "article",
+  author = "Alberto Garre and Gerardo Gonzalez-Tejedor and Jose-Lucas Penalver-Soto and Pablo S. Fernandez and Jose A. Egea",
+  title = "Optimal characterization of thermal microbial inactivation simulating non-isothermal processes",
+journal = "Food Research International",
+volume = "107",
+number = "",
+pages = "267 - 274",
+year = "2018",
+note = "",
+issn = "0963-9969",
+doi = "10.1016/j.foodres.2018.02.040",
+url = "https://www.sciencedirect.com/science/article/pii/S0963996918301297",
+textVersion = "Alberto Garre, Gerardo Gonzalez-Tejedor, Jose-Lucas Penalver-Soto, Pablo S. Fernandez, Jose A. Egea, Optimal characterization of thermal microbial inactivation simulating non-isothermal processes, Food Research International, Volume 107, May 2018, Pages 267-274, ISSN 0963-9969, https://www.sciencedirect.com/science/article/pii/S0963996918301297"
+)
